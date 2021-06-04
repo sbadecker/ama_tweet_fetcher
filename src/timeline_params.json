@@ -1,0 +1,5 @@
+{
+  "tweet.fields": "author_id,conversation_id,created_at,entities,geo,id,in_reply_to_user_id,possibly_sensitive,public_metrics,referenced_tweets,source,text,withheld",
+  "exclude": "retweets",
+  "max_results": 100
+}
