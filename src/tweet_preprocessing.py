@@ -39,5 +39,8 @@ def substitute_mentions(row, user_name_mapping):
     for mention in row.mentions:
         full_name = user_name_mapping.get(mention)
         if full_name:
-            text = re.sub(f"@{mention}", full_name, text)
+            try:
+                text = re.sub(f"@{mention}", full_name, text)
+            except:
+                print(f"Error with mention '{mention}'.")
     return text

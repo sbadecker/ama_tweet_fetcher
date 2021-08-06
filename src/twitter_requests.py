@@ -1,6 +1,7 @@
 import os
 from pprint import pprint
 
+import pandas as pd
 import requests
 
 from utils import load_json, save_json
@@ -13,14 +14,36 @@ class TwitterApi:
         self.timeline_params = load_json(timeline_params_path)
 
     def build_user_dataset(self, user_name, params=None, data_dir="data"):
+        filepath = os.path.join(
+            data_dir, f"{user_name}.json")
+        tweets = self.load_storred_tweets(filepath)
+        latest_stored_tweet = self.get_latest_stored_tweet(tweets)
+        if latest_stored_tweet:
+            latest_stored_tweet_id = latest_stored_tweet["id"]
+            if params:
+                params["since_id"] = latest_stored_tweet_id
+            else:
+                params = {"since_id": latest_stored_tweet_id}
+
         user_id = self.query_user_data_by_name(
             user_name, params={"user.fields": "id"})["id"]
-        tweets = self.get_user_tweets(user_id, params)
-        n_tweets = len(tweets)
-        filepath = os.path.join(
-            data_dir, f"{user_name}_{n_tweets}_tweets.json")
+        new_tweets = self.get_user_tweets(user_id, params)
+        tweets += new_tweets
+
         save_json(tweets, filepath)
-        print(f"{n_tweets} tweets queried and stored.")
+        print(f"{len(new_tweets)} tweets queried and stored.")
+
+    def get_latest_stored_tweet(self, tweets):
+        if tweets:
+            latest_stored_tweet = pd.DataFrame(tweets).sort_values("created_at", ascending=False).iloc[0].to_dict()
+            return latest_stored_tweet
+
+    def load_storred_tweets(self, filepath):
+        if os.path.exists(filepath):
+            tweets = load_json(filepath)
+        else:
+            tweets = []
+        return tweets
 
     def get_user_tweets(self, user_id, params=None):
         url = f"https://api.twitter.com/2/users/{user_id}/tweets"
@@ -36,7 +59,7 @@ class TwitterApi:
             timeline_params.update({"pagination_token": next_token})
             json_response = self.connect_to_endpoint(
                 url, self.headers, timeline_params)
-            tweets.extend(json_response["data"])
+            tweets.extend(json_response.get("data", []))
             n_tweets = len(tweets)
             if n_tweets % 1000 == 0:
                 print(f"{n_tweets} queried.")
