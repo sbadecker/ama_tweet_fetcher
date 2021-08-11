@@ -53,7 +53,7 @@ class TwitterApi:
             timeline_params.update(**params)
         json_response = self.connect_to_endpoint(
             url, self.headers, timeline_params)
-        tweets.extend(json_response["data"])
+        tweets.extend(json_response.get("data", []))
         while json_response["meta"].get("next_token"):
             next_token = json_response["meta"]["next_token"]
             timeline_params.update({"pagination_token": next_token})
